@@ -54,12 +54,12 @@ function App() {
         </Flex>
       </Container>
     );
-  if (isAuthenticated)
+  if (isAuthenticated && user && games)
     return (
       <>
-        <Navbar isAuthenticated={isAuthenticated} user={user!} games={games!} />
+        <Navbar isAuthenticated={isAuthenticated} user={user} games={games!} />
         <Container maxWidth="60%">
-          <TopTags games={games!} />
+          <TopTags games={games} />
         </Container>
       </>
     );

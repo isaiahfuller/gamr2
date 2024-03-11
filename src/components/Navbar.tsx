@@ -1,4 +1,4 @@
-import { Avatar, Button, Flex, Icon, useColorMode } from "@chakra-ui/react";
+import { Avatar, Button, Flex, Icon, Spinner, useColorMode } from "@chakra-ui/react";
 import { faMoon, faRightToBracket, faSun } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { OwnedGameList, SteamUser } from "../interfaces";
@@ -9,7 +9,7 @@ export interface NavbarProps {
   games: OwnedGameList;
 }
 
-export default function Navbar({isAuthenticated, user, games}: NavbarProps) {
+export default function Navbar({ isAuthenticated, user, games }: NavbarProps) {
   const { colorMode, toggleColorMode } = useColorMode();
 
   async function logOut() {
@@ -24,7 +24,7 @@ export default function Navbar({isAuthenticated, user, games}: NavbarProps) {
       <div></div>
       <div>
         <Flex alignItems="center">
-          {isAuthenticated ? (
+          {isAuthenticated && games ? (
             <>
               <Avatar
                 size="md"
@@ -44,13 +44,13 @@ export default function Navbar({isAuthenticated, user, games}: NavbarProps) {
                 <Icon as={FontAwesomeIcon} icon={faRightToBracket} />
               </Button>
             </>
-          ) : (
-            <a href="/steam/auth">
-              <Button>
+          ) : isAuthenticated && !games ? <Spinner /> : (
+            <Button mx={1}>
+              <a href="/steam/auth">
                 <Icon as={FontAwesomeIcon} icon={faRightToBracket} pr={2} />
                 Login
-              </Button>
-            </a>
+              </a>
+            </Button>
           )}
           <Button onClick={toggleColorMode}><Icon as={FontAwesomeIcon} icon={colorMode === "light" ? faMoon : faSun} /></Button>
         </Flex>
