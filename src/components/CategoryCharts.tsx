@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Container,
   Flex,
   Heading,
@@ -19,14 +20,14 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { OwnedGameList, TagStats } from "../interfaces";
+import { OwnedGameList, TagStat, TagStats } from "../interfaces";
 import TagChart from "./TagChart";
 import { SetStateAction, useEffect, useMemo, useState } from "react";
 import { tagCategories } from "../util/tagCategories";
 import { Select } from "chakra-react-select";
 import useWindowDimensions from "../hooks/windowDimensions.ts";
 import GameTabEntry from "./GameTabEntry.tsx";
-import { relevanceSort } from "../utils/relevanceSort.ts";
+import { relevanceSort } from "../util/relevanceSort.ts";
 
 interface CategoryChartsProps {
   tags: TagStats;
@@ -39,6 +40,8 @@ export default function CategoryCharts({ tags, games }: CategoryChartsProps) {
   const [ownedLoading, setOwnedLoading] = useState(true);
   const [minimumPlaytime, setMinimumPlaytime] = useState(0);
   const [nameFilter, setNameFilter] = useState("");
+  const [displayLargeList, setDisplayLargeList] = useState(false);
+  const [filteredTags, setFilteredTags] = useState<TagStat[]>([]);
   const { width, height } = useWindowDimensions();
   const categorySelectOptions = useMemo(() => {
     const res = [];
@@ -46,57 +49,47 @@ export default function CategoryCharts({ tags, games }: CategoryChartsProps) {
       res.push({ value: e, label: e });
     return res;
   }, []);
-  
+
   const displayedGames = useMemo(() => {
-    if (hoveredTag) {
-      return games.apps
+    if (!filteredTags.length) return games.apps;
+    return (
+      games.apps
         .filter((e) => {
+          for (const tag of filteredTags) {
+            if (e.appinfo.common.store_tags) {
+              setOwnedLoading(false);
+              if (Object.values(e.appinfo.common.store_tags).includes(tag.id))
+                return true;
+            }
+          }
+          setOwnedLoading(false);
+        })
+    );
+  }, [games.apps, selectedTagList, filteredTags]);
+
+  const filteredGames = useMemo(() => {
+    if (hoveredTag) {
+      const games = relevanceSort(
+        displayedGames.filter((e) => {
           if (
             e.appinfo.common.store_tags &&
             Object.values(e.appinfo.common.store_tags).includes(hoveredTag)
           ) {
-            setOwnedLoading(false);
             return true;
           }
-        })
-        .sort((a, b) => {
-          const aName = a.appinfo.common.name,
-            bName = b.appinfo.common.name;
-          return aName.localeCompare(bName);
-        })
-        .sort((a, b) => {
-          const aScore = parseInt(a.appinfo.common.review_percentage) || 0,
-            bScore = parseInt(b.appinfo.common.review_percentage) || 0;
-          return bScore - aScore;
-        });
+        }),
+        nameFilter
+      ).slice(0, 9);
+      setOwnedLoading(false);
+      return games;
     }
-    return games.apps
-      .filter((e) => {
-        if (
-          tagCategories[selectedTagList as keyof object].some((r) => {
-            if (e.appinfo.common.store_tags) {
-              return Object.values(e.appinfo.common.store_tags).includes(r);
-            }
-          })
-        ) {
-          setOwnedLoading(false);
-          return e;
-        }
-      })
-      .sort((a, b) => {
-        const aName = a.appinfo.common.name,
-          bName = b.appinfo.common.name;
-        return aName.localeCompare(bName);
-      })
-      .sort((a, b) => {
-        const aScore = parseInt(a.appinfo.common.review_percentage) || 0,
-          bScore = parseInt(b.appinfo.common.review_percentage) || 0;
-        return bScore - aScore;
-      });
-  }, [games.apps, hoveredTag, selectedTagList]);
-  useEffect(() => {
-    console.log(width);
-  }, [width]);
+    const games = relevanceSort(displayedGames, nameFilter);
+    setOwnedLoading(false);
+    return games;
+  }, [displayedGames, nameFilter, hoveredTag]);
+
+  useEffect(() => console.log("filteredgames", filteredGames), [filteredGames]);
+
   const maximumPlaytime = useMemo(() => {
     let max = 0;
     for (const g of displayedGames) {
@@ -106,8 +99,8 @@ export default function CategoryCharts({ tags, games }: CategoryChartsProps) {
     return max;
   }, [displayedGames]);
 
-  function handleFilter(e: { target: { value: SetStateAction<string>; }; }){
-    setNameFilter(e.target.value)
+  function handleFilter(e: { target: { value: SetStateAction<string> } }) {
+    setNameFilter(e.target.value);
   }
 
   return (
@@ -162,6 +155,8 @@ export default function CategoryCharts({ tags, games }: CategoryChartsProps) {
                 setHoveredTag={setHoveredTag}
                 setOwnedLoading={setOwnedLoading}
                 minimumPlaytime={minimumPlaytime}
+                setFilteredTags={setFilteredTags}
+                filteredTags={filteredTags}
               />
             </Box>
           </Container>
@@ -175,32 +170,33 @@ export default function CategoryCharts({ tags, games }: CategoryChartsProps) {
           <Tab>Owned Games</Tab>
           <Tab>All Games</Tab>
         </TabList>
-        <Input variant="flushed" placeholder="Search for a game..." value={nameFilter} onChange={handleFilter} />
+        <Input
+          variant="flushed"
+          placeholder="Search for a game..."
+          value={nameFilter}
+          onChange={handleFilter}
+        />
 
         <TabPanels>
           <TabPanel>
-            {ownedLoading ? (
+            {filteredGames.length > 50 && !displayLargeList ? (
+              <>
+                <Text>Large lists might cause slowdown.</Text>
+                <Button onClick={() => setDisplayLargeList(true)}>
+                  Display anyway?
+                </Button>
+              </>
+            ) : ownedLoading ? (
               <Spinner />
             ) : (
               <List overflow="scroll" maxHeight={600}>
-                {!nameFilter.length ?
-                displayedGames!
-                // .filter(e=>e.appinfo.common.name.toLowerCase().match(nameFilter.toLowerCase()))
-                .map((e) => {
+                {filteredGames!.map((e) => {
                   return (
                     <ListItem key={e.appinfo.appid}>
                       <GameTabEntry game={e} />
                     </ListItem>
                   );
-                }) :
-                relevanceSort(displayedGames!, nameFilter).map((e) => {
-                  return (
-                    <ListItem key={e.appinfo.appid}>
-                      <GameTabEntry game={e} />
-                    </ListItem>
-                  );
-                })
-                }
+                })}
               </List>
             )}
           </TabPanel>

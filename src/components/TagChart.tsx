@@ -7,9 +7,11 @@ interface TagChartProps {
   tags: TagStats;
   chartName: string;
   minimumPlaytime: number;
+  filteredTags: TagStat[]
   // setSelectedTagList: () => unknown;
   setHoveredTag: (_id: string | null) => unknown;
   setOwnedLoading: (_state: boolean) => unknown;
+  setFilteredTags: (tags: TagStat[]) => unknown
 }
 export default function TagChart({
   tags,
@@ -18,8 +20,9 @@ export default function TagChart({
   setHoveredTag,
   setOwnedLoading,
   minimumPlaytime,
+  filteredTags,
+  setFilteredTags
 }: TagChartProps) {
-  const [usedTags, setUsedTags] = useState<TagStat[]>([]);
 
   useEffect(() => {
     const tagArray = [];
@@ -32,7 +35,7 @@ export default function TagChart({
         tagArray.push(tags[id]);
     tagArray.sort((a, b) => a.name.localeCompare(b.name));
     console.log(tagArray);
-    setUsedTags(tagArray);
+    setFilteredTags(tagArray);
   }, [ids, tags, minimumPlaytime]);
 
   function handleClick(e: {
@@ -41,7 +44,7 @@ export default function TagChart({
     offset: number;
     value: string;
   }) {
-    const selectedTag = usedTags.filter((t) => e.value === t.name)[0];
+    const selectedTag = filteredTags.filter((t) => e.value === t.name)[0];
     console.log(selectedTag);
   }
 
@@ -80,9 +83,9 @@ export default function TagChart({
     );
   }
 
-  if (!usedTags.length) return null;
+  if (!filteredTags.length) return null;
   return (
-    <RadarChart outerRadius="60%" width={500} height={500} data={usedTags}>
+    <RadarChart outerRadius="60%" width={500} height={500} data={filteredTags}>
       <PolarGrid />
       <PolarAngleAxis
         dataKey="name"
