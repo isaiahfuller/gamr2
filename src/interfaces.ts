@@ -32,6 +32,9 @@ export interface SteamGameDetails {
       steam_release_date: string;
       name: string;
       review_percentage: string;
+      icon: string;
+      logo: string;
+      logo_small: string;
     };
   };
   personal: {
