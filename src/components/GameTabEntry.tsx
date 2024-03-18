@@ -5,6 +5,16 @@ import {
   Text,
   Image,
   Box,
+  Popover,
+  PopoverTrigger,
+  Portal,
+  PopoverContent,
+  PopoverArrow,
+  PopoverHeader,
+  PopoverCloseButton,
+  PopoverBody,
+  PopoverFooter,
+  Tag,
 } from "@chakra-ui/react";
 import { SteamGameDetails } from "../interfaces";
 
@@ -16,8 +26,6 @@ export default function GameTabEntry({ game }: { game: SteamGameDetails }) {
   function scoreColor() {
     const reviewScore = parseInt(game.appinfo.common.review_percentage);
     switch (true) {
-      case reviewScore < 0:
-        return "gray.500";
       case reviewScore <= 35:
         return "red.500";
       case reviewScore <= 50:
@@ -33,21 +41,42 @@ export default function GameTabEntry({ game }: { game: SteamGameDetails }) {
     }
   }
   return (
-    <Box borderWidth="1px" borderRadius="lg" padding={1} marginY={1} width="100%">
-      <Flex justify="space-between" alignItems="center">
-        <Box padding={1}>
-          <Image src={gameIconUrl} />
-        </Box>
-        <Text width="100%">{game.appinfo.common.name}</Text>
-        <CircularProgress
-          value={parseInt(game.appinfo.common.review_percentage)}
-          color={scoreColor()}
+    <Popover>
+      <PopoverTrigger>
+        <Box
+          borderWidth="1px"
+          borderRadius="lg"
+          padding={1}
+          marginY={1}
+          width="100%"
         >
-          <CircularProgressLabel>
-            {game.appinfo.common.review_percentage}%
-          </CircularProgressLabel>
-        </CircularProgress>
-      </Flex>
-    </Box>
+          <Flex justify="space-between" alignItems="center">
+            <Box padding={1}>
+              <Image src={gameIconUrl} />
+            </Box>
+            <Text width="100%">{game.appinfo.common.name}</Text>
+            <CircularProgress
+              value={parseInt(game.appinfo.common.review_percentage)}
+              color={scoreColor()}
+            >
+              <CircularProgressLabel>
+                {game.appinfo.common.review_percentage}%
+              </CircularProgressLabel>
+            </CircularProgress>
+          </Flex>
+        </Box>
+      </PopoverTrigger>
+      <Portal>
+        <PopoverContent>
+          <PopoverArrow />
+          <PopoverHeader></PopoverHeader>
+          <PopoverCloseButton />
+          <PopoverBody>
+            {Object.values(game.appinfo.common.store_tags).map(e=><Tag key={e}>{e}</Tag>)}
+          </PopoverBody>
+          <PopoverFooter></PopoverFooter>
+        </PopoverContent>
+      </Portal>
+    </Popover>
   );
 }
